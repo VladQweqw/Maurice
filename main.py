@@ -4,7 +4,9 @@ import psutil
 import threading
 
 # get interfaces
-from helpers import find_interfaces, capture_live_packets, get_network_ip, convert_IP_to_binary
+from helpers import find_interfaces, capture_live_packets, get_network_ip, convert_IP_to_binary, dnsResolve
+
+dnsResolve("5.12.125.226")
 
 root = Tk()
 root.geometry('300x500')

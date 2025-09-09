@@ -2,6 +2,9 @@ import psutil
 import pyshark
 import asyncio
 
+import dns.resolver
+import dns.reversename
+
 def find_interfaces():
     addresses = []
 
@@ -69,10 +72,13 @@ def capture_live_packets(isScanning, user_ip, network_ip, subnet_bits):
                     ip_dest = raw_packet.ip.dst
                     
                     if is_IP_in_network(ip_src, network_ip, subnet_bits):
+                        dns_res = dnsResolve(ip_dest)
+                        if dns_res == "ERROR": dns_res = "Failed to lookup"
+
                         if ip_src == user_ip:
-                            print(f"Your PC -> {ip_dest}")
+                            print(f"Your PC -> {dns_res}")
                         else:
-                            print(f"{ip_src} -> {ip_dest}")
+                            print(f"{ip_src} -> {dns_res}")
         
             except Exception as e:
                 print(f"Error {e}")
@@ -80,6 +86,15 @@ def capture_live_packets(isScanning, user_ip, network_ip, subnet_bits):
 
 
 
+def dnsResolve(ip):
+    try:
+        reverse_name = dns.reversename.from_address(ip)
+        answer = dns.resolver.resolve(reverse_name, 'PTR')
+
+        for val in answer:
+            return val.to_text()
+    except Exception as e:
+        return 'ERROR'
 
 def is_IP_in_network(host_ip, network_ip, subnet_bits):
     host_ip_bin = convert_IP_to_binary(host_ip)
