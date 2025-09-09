@@ -2,11 +2,12 @@ from tkinter import *
 from tkinter import ttk
 import psutil
 import threading
+import pyshark
+import asyncio
 
 # get interfaces
-from helpers import find_interfaces, capture_live_packets, get_network_ip, convert_IP_to_binary, dnsResolve
+from helpers import find_interfaces, convert_IP_to_binary, get_network_ip, dnsResolve, is_IP_in_network
 
-dnsResolve("5.12.125.226")
 
 root = Tk()
 root.geometry('300x500')
@@ -34,7 +35,6 @@ dropdown.pack(pady=20)
 
 def on_interface_change(event):
     selected_interface = addresses_interfaces.index(selected_option.get())
-    print(selected_interface)
 
     current_lan_ip.set(addresses[selected_interface][1])
     current_lan_network.set(addresses[selected_interface][2])
@@ -42,12 +42,38 @@ def on_interface_change(event):
 dropdown.bind("<<ComboboxSelected>>", on_interface_change)
 
 # list
-listbox = Listbox(root, font=("Roboto", 16))
+listbox = Listbox(root, font=("Roboto", 10))
 listbox.pack(fill=BOTH, expand=True, padx=10, pady=10)
 
 def insert_row(text):
-    listbox.insert(START, text)
+    listbox.insert(0, text)
 
+
+def capture_live_packets(isScanning, network_ip, subnet_bits):
+    # createa a loop for asyncio thread
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    capture = pyshark.LiveCapture(selected_option.get())
+    for raw_packet in capture.sniff_continuously():
+        if not isScanning:
+            capture.close()
+            break
+        else:
+            try:
+                if "IP" in raw_packet:
+                    ip_src = raw_packet.ip.src
+                    ip_dest = raw_packet.ip.dst
+                    
+                    if is_IP_in_network(ip_src, network_ip, subnet_bits):
+                        dns_res = dnsResolve(ip_dest)
+                        if dns_res == "ERROR": dns_res = "Failed to lookup"
+
+                        insert_row(f"Your PC -> {dns_res} ({ip_dest})")
+                
+        
+            except Exception as e:
+                print(f"Error {e}")
 
 isScanning = False
 def start_scanning():
@@ -61,7 +87,6 @@ def start_scanning():
         isScanning = True
         threading.Thread(target=capture_live_packets, args=(
             isScanning, 
-            current_lan_ip.get(),
             get_network_ip(current_lan_ip.get(), current_lan_network.get()), 
             convert_IP_to_binary(current_lan_network.get())
         ), daemon=True).start()

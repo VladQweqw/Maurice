@@ -55,34 +55,6 @@ def get_network_ip(host_ip, subnet_mask):
     return network_ip
 
 
-def capture_live_packets(isScanning, user_ip, network_ip, subnet_bits):
-    # createa a loop for asyncio thread
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    capture = pyshark.LiveCapture(interface='Ethernet')
-    for raw_packet in capture.sniff_continuously():
-        if not isScanning:
-            capture.close()
-            break
-        else:
-            try:
-                if "IP" in raw_packet:
-                    ip_src = raw_packet.ip.src
-                    ip_dest = raw_packet.ip.dst
-                    
-                    if is_IP_in_network(ip_src, network_ip, subnet_bits):
-                        dns_res = dnsResolve(ip_dest)
-                        if dns_res == "ERROR": dns_res = "Failed to lookup"
-
-                        if ip_src == user_ip:
-                            print(f"Your PC -> {dns_res}")
-                        else:
-                            print(f"{ip_src} -> {dns_res}")
-        
-            except Exception as e:
-                print(f"Error {e}")
-
 
 
 
