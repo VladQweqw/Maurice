@@ -1,9 +1,10 @@
 from tkinter import *
 from tkinter import ttk
 import psutil
+import threading
 
 # get interfaces
-from helpers import find_interfaces
+from helpers import find_interfaces, capture_live_packets
 
 root = Tk()
 root.geometry('300x500')
@@ -39,17 +40,30 @@ def on_interface_change(event):
 dropdown.bind("<<ComboboxSelected>>", on_interface_change)
 
 
-items = ['a', 'c', 'd']
 # list
 listbox = Listbox(root, font=("Roboto", 16))
 listbox.pack(fill=BOTH, expand=True, padx=10, pady=10)
 
-for item in items:
-    listbox.insert(END, item)
+def insert_row(text):
+    listbox.insert(START, text)
 
-def add_item():
-    listbox.insert(END, "d")
 
-scan_btn = Button(root, text="Scan", font=("Roboto", 16), command=add_item).pack(pady=10)
+isScanning = False
+def start_scanning():
+    global isScanning
+
+    if isScanning:
+        btn_text_var.set("Scan")
+        isScanning = False
+    else:
+        btn_text_var.set("Stop SCAN")
+        isScanning = True
+        threading.Thread(target=capture_live_packets, args=({
+            'value': isScanning
+        },), daemon=True).start()
+    
+
+btn_text_var = StringVar(value="Scan")
+scan_btn = Button(root, textvariable=btn_text_var, font=("Roboto", 16), command=start_scanning).pack(pady=10)
 
 root.mainloop()
