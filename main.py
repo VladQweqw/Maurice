@@ -10,6 +10,7 @@ from helpers import find_interfaces, convert_IP_to_binary, get_network_ip, dnsRe
 
 
 root = Tk()
+root.title("Network Spy")
 root.geometry('300x500')
 title = Label(root, text="Network spy", font=("Roboto", 16)).pack(pady=10)
 
